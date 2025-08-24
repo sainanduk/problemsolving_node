@@ -48,7 +48,37 @@ class TagsController {
       return res.status(500).json({ error: error.message });
     }
   }
+  async searchTags(req, res) {
 
+    try {
+      const { query } = req.query;  
+      if (!query) return res.status(400).json({ error: "Query parameter is required" });
+      const tags = await this.Tag.findAll({
+        where: {
+          name: {
+            [Op.iLike]: `%${query}%`
+          }
+        },
+        include: [
+          {
+            model: this.Question,
+            through: { attributes: [] }, // exclude join table data
+            attributes: ["id", "title", "difficulty"],
+          },
+        ],
+      }); 
+      const result = tags.map(tag => ({
+        id: tag.id,
+        name: tag.name,
+        questionCount: tag.Questions.length,
+        questions: tag.Questions,
+
+      }));
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
   // Get single tag with questions
   async getTagById(req, res) {
     try {
@@ -76,12 +106,13 @@ class TagsController {
   async updateTag(req, res) {
     try {
       const { id } = req.params;
-      const { name } = req.body;
+      const { name,slug } = req.body;
 
       const tag = await this.Tag.findByPk(id);
       if (!tag) return res.status(404).json({ error: "Tag not found" });
 
       tag.name = name || tag.name;
+      tag.slug = slug || tag.slug;
       await tag.save();
 
       return res.json(tag);

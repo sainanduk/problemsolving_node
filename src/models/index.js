@@ -11,6 +11,7 @@ const Editorial = require("./Questioneditorial")(sequelize, DataTypes);
 const Testcase = require("./Testcases")(sequelize, DataTypes);
 const UserQuestion = require("./UserQuestion")(sequelize, DataTypes);
 
+
 // -------------------- Associations -------------------- //
 
 // 📌 User ↔ Question (through UserQuestion)

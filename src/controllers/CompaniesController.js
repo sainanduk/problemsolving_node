@@ -8,11 +8,28 @@ class CompaniesController {
   // Create company
   async createCompany(req, res) {
     try {
-      const { name } = req.body;
+      const { name,slug } = req.body;
       if (!name) return res.status(400).json({ error: "Company name is required" });
+      if (!slug) return res.status(400).json({ error: "Company slug is required" });
+      const existing = await this.Company.findOne({ where: { slug } });
+      if (existing) return res.status(400).json({ error: "Company with this slug already exists" });
 
-      const company = await this.Company.create({ name });
+      const company = await this.Company.create({ name, slug });
       res.status(201).json(company);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+  
+  async getCompanyBySlug(req, res) {
+    try {
+      const { slug } = req.params;
+      const company = await this.Company.findOne({
+        where: { slug },
+        include: [{ model: this.Question, through: { attributes: [] } }]
+      });
+      if (!company) return res.status(404).json({ error: "Company not found" });
+      res.json(company);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -47,12 +64,13 @@ class CompaniesController {
   async updateCompany(req, res) {
     try {
       const { id } = req.params;
-      const { name } = req.body;
+      const { name,slug } = req.body;
 
       const company = await this.Company.findByPk(id);
       if (!company) return res.status(404).json({ error: "Company not found" });
 
       company.name = name || company.name;
+      company.slug = slug || company.slug;
       await company.save();
 
       res.json(company);

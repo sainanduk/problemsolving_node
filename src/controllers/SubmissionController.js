@@ -17,14 +17,14 @@ class SubmissionsController {
   // Create submission
   async createSubmission(req, res) {
     try {
-      const { question_id, language, code } = req.body;
+      const { question_id, language_id, code } = req.body;
       const user_id = req.user.id;
 
       // Save as pending
       const submission = await this.Submission.create({
         user_id,
         question_id,
-        language,
+        language_id,
         code,
         status: "pending",
       });
@@ -56,7 +56,7 @@ class SubmissionsController {
           this.JUDGE0_URL + "?base64_encoded=false&wait=true",
           {
             source_code: code,
-            language_id: this.mapLanguage(language),
+            language_id: language_id,
             stdin: tc.input,
             expected_output: tc.output,
           },
@@ -134,17 +134,6 @@ class SubmissionsController {
     }
   }
 
-  // Helper: language mapping
-  mapLanguage(lang) {
-    const mapping = {
-      cpp: 54,
-      c: 50,
-      java: 62,
-      python: 71,
-      javascript: 63,
-    };
-    return mapping[lang] || 71;
-  }
 }
 
 module.exports = SubmissionsController;
