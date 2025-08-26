@@ -5,7 +5,7 @@ module.exports = (sequelize) => {
     "UserQuestion",
     {
       user_id: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.UUID,
         primaryKey: true,
         references: {
           model: "users", // must match your Users table name

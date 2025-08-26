@@ -11,7 +11,7 @@ module.exports = (sequelize) => {
         autoIncrement: true,
       },
       user_id: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.UUID,
         allowNull: false,
         references: {
           model: "users", // table name
@@ -48,6 +48,11 @@ module.exports = (sequelize) => {
           "compilation_error"
         ),
         defaultValue: "pending",
+      },
+      submitted_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
       },
       execution_time: {
         type: DataTypes.FLOAT, // in seconds

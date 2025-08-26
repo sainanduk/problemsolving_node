@@ -2,11 +2,12 @@ const axios = require("axios");
 const redis = require("../config/redis");
 
 class SubmissionsController {
-  constructor(Submission, TestCase) {
+  constructor(Submission, Testcase, UserQuestion) {
     this.Submission = Submission;
-    this.TestCase = TestCase;
+    this.Testcase = Testcase;
+    this.UserQuestion = UserQuestion;
 
-    this.JUDGE0_URL = "https://judge0-ce.p.rapidapi.com/submissions";
+    this.JUDGE0_URL = "https://ce.judge0.com/submissions";
     this.JUDGE0_HEADERS = {
       "Content-Type": "application/json",
       "X-RapidAPI-Key": process.env.JUDGE0_API_KEY,
@@ -17,14 +18,15 @@ class SubmissionsController {
   // Create submission
   async createSubmission(req, res) {
     try {
-      const { question_id, language_id, code } = req.body;
-      const user_id = req.user.id;
-
+      const {  language_id, code } = req.body;
+      const user_id = req.user.userId; // Fixed: should be userId not id
+      console.log(user_id);
+      const question_id = req.params.id;
       // Save as pending
       const submission = await this.Submission.create({
         user_id,
         question_id,
-        language_id,
+        language: language_id, // Fixed: model expects 'language' not 'language_id'
         code,
         status: "pending",
       });
@@ -36,7 +38,7 @@ class SubmissionsController {
       if (testcases) {
         testcases = JSON.parse(testcases);
       } else {
-        testcases = await this.TestCase.findAll({
+        testcases = await this.Testcase.findAll({
           where: { question_id },
           attributes: ["input", "output"],
         });
@@ -50,6 +52,15 @@ class SubmissionsController {
       let allPassed = true;
       let execution_time = 0;
       let memory_used = 0;
+      let user_question = await this.UserQuestion.findOne({
+        where: {
+          user_id: user_id, 
+          question_id: question_id
+        }
+      });
+      if (!user_question) {
+        await this.UserQuestion.create({user_id: user_id, question_id: question_id, status: "attempted", last_solved_at: new Date()});
+      }
 
       for (const tc of testcases) {
         const judgeResponse = await axios.post(
@@ -59,13 +70,14 @@ class SubmissionsController {
             language_id: language_id,
             stdin: tc.input,
             expected_output: tc.output,
-          },
-          { headers: this.JUDGE0_HEADERS }
+          }
         );
 
         const result = judgeResponse.data;
+        
         execution_time = Math.max(execution_time, result.time || 0);
         memory_used = Math.max(memory_used, result.memory || 0);
+        
 
         if (result.status?.description !== "Accepted") {
           allPassed = false;
@@ -75,7 +87,11 @@ class SubmissionsController {
           else if (result.status?.description === "Runtime Error") status = "runtime_error";
 
           await submission.update({ status, execution_time, memory_used });
-          return res.json(submission); // stop early on fail
+          if (user_question.status !== "solved") {
+            await this.UserQuestion.update({status: "attempted", last_solved_at: new Date()}, {where: {user_id: user_id, question_id: question_id}});
+          }
+          
+          return res.json({submission, input: tc.input, output: tc.output, stdout: result.stdout}); // stop early on fail
         }
       }
 
@@ -86,9 +102,10 @@ class SubmissionsController {
           execution_time,
           memory_used,
         });
+        await this.UserQuestion.update({status: "solved", last_solved_at: new Date()}, {where: {user_id: user_id, question_id: question_id}});
       }
 
-      res.status(201).json(submission);
+      res.status(201).json({ submission });
     } catch (error) {
       console.error(error.response?.data || error.message);
       res.status(500).json({ error: "Failed to create submission" });
@@ -98,8 +115,9 @@ class SubmissionsController {
   // Get submissions by logged-in user
   async getUserSubmissions(req, res) {
     try {
+      console.log(req.user.userId);
       const submissions = await this.Submission.findAll({
-        where: { user_id: req.user.id },
+        where: { user_id: req.user.userId },
         order: [["createdAt", "DESC"]],
       });
       res.json(submissions);

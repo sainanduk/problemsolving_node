@@ -3,13 +3,9 @@ module.exports = (sequelize, DataTypes) => {
   const QuestionCompanies = sequelize.define(
     "QuestionCompanies",
     {
-      id: {
+      question_id: {
         type: DataTypes.BIGINT,
-        autoIncrement: true,
         primaryKey: true,
-      },
-      questionId: {
-        type: DataTypes.BIGINT,
         allowNull: false,
         references: {
           model: "Questions",
@@ -17,8 +13,9 @@ module.exports = (sequelize, DataTypes) => {
         },
         onDelete: "CASCADE",
       },
-      companyId: {
+      company_id: {
         type: DataTypes.BIGINT,
+        primaryKey: true,
         allowNull: false,
         references: {
           model: "Companies",
@@ -29,11 +26,11 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       tableName: "question_companies",
-      timestamps: false,
+      timestamps: true, // The table has createdAt and updatedAt
       indexes: [
         {
           unique: true,
-          fields: ["questionId", "companyId"], // prevent duplicate company mapping
+          fields: ["question_id", "company_id"], // prevent duplicate company mapping
         },
       ],
     }

@@ -6,10 +6,10 @@ module.exports = (sequelize) => {
     "User",
     {
       id: {
-        type: DataTypes.BIGINT,
-        autoIncrement: true,
-        primaryKey: true,
-      },
+  type: DataTypes.UUID,
+  primaryKey: true,
+  defaultValue: DataTypes.UUIDV4,
+},
       username: {
         type: DataTypes.STRING(50),
         allowNull: false,

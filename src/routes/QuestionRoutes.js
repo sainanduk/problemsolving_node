@@ -8,8 +8,10 @@ const {
   Editorial,
   Tag,
   Company,
+  UserQuestion,
 } = require("../models");
 const QuestionController = require("../controllers/QuestionController");
+const { optionalAuth, authenticateToken } = require("../middleware/auth");
 
 const questionController = new QuestionController({
   Question,
@@ -18,16 +20,17 @@ const questionController = new QuestionController({
   Editorial,
   Tag,
   Company,
+  UserQuestion,
 });
 
 // CRUD routes
 router.post("/questions", (req, res) =>
   questionController.createQuestion(req, res)
 );
-router.get("/questions", (req, res) =>
+router.get("/questions", authenticateToken, (req, res) =>
   questionController.getAllQuestions(req, res)
 );
-router.get("/questions/:id", (req, res) =>
+router.get("/questions/:id", authenticateToken, (req, res) =>
   questionController.getQuestionById(req, res)
 );
 router.put("/questions/:id", (req, res) =>

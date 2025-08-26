@@ -11,7 +11,7 @@ module.exports = (sequelize) => {
         primaryKey: true,
       },
       slug: {
-        type: DataTypes.STRING(128),
+        type: DataTypes.STRING(127),
         allowNull: false,
         unique: true, // SEO-friendly unique slug (like "two-sum")
       },

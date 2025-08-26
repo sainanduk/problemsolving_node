@@ -1,8 +1,8 @@
 class CompaniesController {
-  constructor(Company, Question, QuestionCompany) {
+  constructor(Company, Question, QuestionCompanies) {
     this.Company = Company;
     this.Question = Question;
-    this.QuestionCompany = QuestionCompany;
+    this.QuestionCompanies = QuestionCompanies;
   }
 
   // Create company
@@ -35,12 +35,53 @@ class CompaniesController {
     }
   }
 
-  // Get all companies
+  // Get all companies with pagination
   async getAllCompanies(req, res) {
     try {
-      const companies = await this.Company.findAll();
-      res.json(companies);
+      // Parse query parameters with defaults
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
+
+      console.log("Pagination params:", { page, limit, offset });
+
+      // Get companies with pagination
+      const { count, rows: companies } = await this.Company.findAndCountAll({
+        attributes: ['id', 'name', 'slug', 'website'],
+        limit: limit,
+        offset: offset,
+        order: [['name', 'ASC']] // Order by name alphabetically
+      });
+
+      console.log("Companies found:", companies.length, "Total count:", count);
+
+      // Calculate pagination metadata
+      const totalPages = Math.ceil(count / limit);
+      const pagination = {
+        currentPage: page,
+        totalPages: totalPages,
+        totalItems: count,
+        itemsPerPage: limit
+      };
+
+      // Format companies to match the expected response structure
+      const formattedCompanies = companies.map(company => ({
+        id: company.id.toString(),
+        name: company.name,
+        slug: company.slug,
+        website: company.website
+      }));
+
+      console.log("Pagination metadata:", pagination);
+
+      // Return response in the specified format
+      res.json({
+        companies: formattedCompanies,
+        pagination: pagination
+      });
+
     } catch (error) {
+      console.error("Error in getAllCompanies:", error);
       res.status(500).json({ error: error.message });
     }
   }
@@ -105,7 +146,7 @@ class CompaniesController {
         return res.status(404).json({ error: "Company or Question not found" });
       }
 
-      await this.QuestionCompany.create({ companyId, questionId });
+      await this.QuestionCompanies.create({ company_id: companyId, question_id: questionId });
 
       res.json({ message: "Company assigned to question successfully" });
     } catch (error) {

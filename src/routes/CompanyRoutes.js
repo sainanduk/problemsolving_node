@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { Company, Question, QuestionCompany } = require("../models"); 
+const { Company, Question, QuestionCompanies } = require("../models"); 
 const CompaniesController = require("../controllers/CompaniesController");
 
-const companiesController = new CompaniesController(Company, Question, QuestionCompany);
+const companiesController = new CompaniesController(Company, Question, QuestionCompanies);
 
 // CRUD routes
 router.post("/companies", (req, res) => companiesController.createCompany(req, res));

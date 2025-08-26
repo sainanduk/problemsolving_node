@@ -1,9 +1,9 @@
 const { Op } = require("sequelize");
 class TagsController {
-  constructor({ Tag, Question, QuestionTag }) {
+  constructor({ Tag, Question, QuestionTags }) {
     this.Tag = Tag;
     this.Question = Question;
-    this.QuestionTag = QuestionTag;
+    this.QuestionTags = QuestionTags;
   }
 
   // Create a new tag
@@ -23,28 +23,52 @@ class TagsController {
     }
   }
 
-  // Get all tags with question count
+  // Get all tags with pagination
   async getAllTags(req, res) {
     try {
-      const tags = await this.Tag.findAll({
-        include: [
-          {
-            model: this.Question,
-            through: { attributes: [] }, // exclude join table data
-            attributes: ["id", "title"],
-          },
-        ],
+      // Parse query parameters with defaults
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
+
+      console.log("Pagination params:", { page, limit, offset });
+
+      // Get tags with pagination
+      const { count, rows: tags } = await this.Tag.findAndCountAll({
+        attributes: ['id', 'name', 'slug'],
+        limit: limit,
+        offset: offset,
+        order: [['name', 'ASC']] // Order by name alphabetically
       });
 
-      const result = tags.map(tag => ({
-        id: tag.id,
+      console.log("Tags found:", tags.length, "Total count:", count);
+
+      // Calculate pagination metadata
+      const totalPages = Math.ceil(count / limit);
+      const pagination = {
+        currentPage: page,
+        totalPages: totalPages,
+        totalItems: count,
+        itemsPerPage: limit
+      };
+
+      // Format tags to match the expected response structure
+      const formattedTags = tags.map(tag => ({
+        id: tag.id.toString(),
         name: tag.name,
-        questionCount: tag.Questions.length,
-        questions: tag.Questions,
+        slug: tag.slug
       }));
 
-      return res.json(result);
+      console.log("Pagination metadata:", pagination);
+
+      // Return response in the specified format
+      res.json({
+        tags: formattedTags,
+        pagination: pagination
+      });
+
     } catch (error) {
+      console.error("Error in getAllTags:", error);
       return res.status(500).json({ error: error.message });
     }
   }
@@ -139,15 +163,18 @@ class TagsController {
   async addTagToQuestion(req, res) {
     try {
       const { tagId, questionId } = req.body;
-
+      
+      
       const tag = await this.Tag.findByPk(tagId);
       const question = await this.Question.findByPk(questionId);
+      console.log(tag, question);
+      
 
       if (!tag || !question) {
         return res.status(404).json({ error: "Tag or Question not found" });
       }
 
-      await this.QuestionTag.create({ tag_id: tagId, question_id: questionId });
+      await this.QuestionTags.create({ tag_id: tagId, question_id: questionId });
 
       return res.json({ message: "Tag assigned to question" });
     } catch (error) {

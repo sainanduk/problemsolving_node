@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { Tag, Question, QuestionTag } = require("../models");
+const { Tag, Question, QuestionTags } = require("../models");
 const TagsController = require("../controllers/TagsController");
 
-const tagsController = new TagsController({ Tag, Question, QuestionTag });
+const tagsController = new TagsController({ Tag, Question, QuestionTags });
 
 // All routes have `/tags/...` prefix directly
 router.get("/tags", (req, res) => tagsController.getAllTags(req, res));
