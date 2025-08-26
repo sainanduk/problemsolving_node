@@ -69,6 +69,7 @@ UserQuestion.belongsTo(User, { foreignKey: "user_id" });
 Question.hasMany(UserQuestion, { foreignKey: "question_id" });
 UserQuestion.belongsTo(Question, { foreignKey: "question_id" });
 
+
 // -------------------- Export models + sequelize -------------------- //
 const models = {
   User,
